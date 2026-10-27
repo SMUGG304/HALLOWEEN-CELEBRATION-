@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You've Been Warned</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;font-family:Arial,sans-serif}
+body{min-height:100vh;min-height:100dvh;background:#210909;color:white;display:grid;place-items:center;overflow:hidden}
+.card{text-align:center;width:min(92vw,520px);padding:24px 18px}
+h1{font-size:clamp(2rem,9vw,3.6rem);line-height:1.12}
+p{font-size:1.1rem;color:#ddd;margin:26px 0}
+button{border:0;border-radius:16px;padding:18px 30px;font-size:1.2rem;font-weight:bold;background:#ff6900;color:white;cursor:pointer;touch-action:manipulation}
+.hidden{display:none!important}
+#countdown,#scare{position:fixed;inset:0;display:none;place-items:center;z-index:5}
+#countdown{background:#000;font-size:clamp(8rem,35vw,15rem);font-weight:900}
+#scare{background:#000;overflow:hidden}
+#scare img{width:100%;height:100%;object-fit:contain}
+#flash{position:fixed;inset:0;z-index:7;background:white;opacity:0;pointer-events:none}
+#close{position:fixed;top:14px;right:14px;z-index:8;background:#222;border:1px solid white;padding:12px 16px;font-size:1rem}
+.credit{font-size:.9rem;color:#aaa;margin-top:48px}
+@media(prefers-reduced-motion:reduce){#flash{display:none}}
+</style>
+</head>
+<body>
+<main class="card" id="home">
+  <h1>👁️ YOU'VE BEEN WARNED!</h1>
+  <p>Happy Halloween... 😈</p>
+  <button id="retry">TRY AGAIN</button>
+  <div class="credit">Created by JL · Halloween Project</div>
+</main>
+
+<div id="countdown" aria-live="assertive">3</div>
+
+<div id="scare" role="dialog" aria-label="Halloween surprise">
+  <img id="jeff" src="jeff.jpg" alt="Halloween horror image">
+</div>
+<button id="close" class="hidden" type="button">CLOSE ✕</button>
+<div id="flash"></div>
+
+<!-- Upload your own licensed or created five-second audio as waw.mp3 -->
+<audio id="sound" src="waw.mp3" preload="auto"></audio>
+
+<script>
+(() => {
+  const home = document.getElementById('home');
+  const retry = document.getElementById('retry');
+  const countdown = document.getElementById('countdown');
+  const scare = document.getElementById('scare');
+  const flash = document.getElementById('flash');
+  const close = document.getElementById('close');
+  const sound = document.getElementById('sound');
+
+  let attempts = 0;
+  let busy = false;
+  let timers = [];
+
+  function later(fn, ms) {
+    timers.push(setTimeout(fn, ms));
+  }
+
+  function clearTimers() {
+    timers.forEach(clearTimeout);
+    timers = [];
+  }
+
+  retry.addEventListener('click', () => {
+    if (busy) return;
+    attempts++;
+
+    if (attempts < 2) {
+      retry.textContent = 'TRY ONE MORE TIME';
+      return;
+    }
+
+    busy = true;
+    home.classList.add('hidden');
+    countdown.style.display = 'grid';
+
+    let n = 3;
+    countdown.textContent = n;
+
+    function tick() {
+      n--;
+      if (n > 0) {
+        countdown.textContent = n;
+        later(tick, 1000);
+      } else {
+        countdown.style.display = 'none';
+        reveal();
+      }
+    }
+
+    later(tick, 1000);
+  });
+
+  function reveal() {
+    scare.style.display = 'grid';
+    close.classList.remove('hidden');
+
+    // Playback starts only after the countdown ends.
+    sound.currentTime = 0;
+    sound.play().catch(() => {
+      // Mobile browsers may require sound to be enabled by the user.
+    });
+
+    // Eight brief pulses. White opacity never exceeds 30%.
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      flash.style.display = 'block';
+      let i = 0;
+
+      function pulse() {
+        if (i >= 8) {
+          flash.style.opacity = '0';
+          flash.style.display = 'none';
+          return;
+        }
+        flash.style.opacity = i % 2 === 0 ? '0.30' : '0';
+        i++;
+        later(pulse, 140);
+      }
+      pulse();
+    }
+  }
+
+  function reset() {
+    clearTimers();
+    sound.pause();
+    sound.currentTime = 0;
+    flash.style.opacity = '0';
+    flash.style.display = 'none';
+    scare.style.display = 'none';
+    countdown.style.display = 'none';
+    close.classList.add('hidden');
+    home.classList.remove('hidden');
+    retry.textContent = 'TRY AGAIN';
+    attempts = 0;
+    busy = false;
+  }
+
+  close.addEventListener('click', reset);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && busy) reset();
+  });
+
+  sound.addEventListener('ended', () => {
+    // The image remains visible until the visitor closes it.
+  });
+})();
+</script>
+</body>
+</html>
